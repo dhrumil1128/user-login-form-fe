@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Login</title>
+    <style>
+        /* Step B: style.css content embedded */
+        /* Basic Reset and Layout */
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f4f4f9; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        } 
+        .login-container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 400px; 
+        } 
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        input[type="email"], input[type="password"] { 
+            width: 100%; 
+            padding: 10px; 
+            margin-bottom: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            font-size: 16px;
+        }
+        button { 
+            width: 100%; 
+            padding: 10px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        button:disabled { 
+            background-color: #a0c8f0; 
+            cursor: not-allowed; 
+        }
+        button:not(:disabled):hover {
+            background-color: #0056b3;
+        }
+        #errorMessage { 
+            color: red; 
+            margin-top: -10px; 
+            margin-bottom: 15px; 
+            font-size: 0.9em; 
+            padding: 5px 0;
+        }
+        #successMessage { 
+            color: green; 
+            margin-top: 15px; 
+            padding: 10px; 
+            border: 1px solid green; 
+            background-color: #e6ffe6; 
+            border-radius: 4px; 
+            text-align: center;
+        }
+        .hidden { 
+            display: none; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <!-- 3. Component Structure (HTML/DOM) -->
+        <h2 id="loginTitle">Login</h2>
+        
+        <form id="loginForm">
+            
+            <!-- Email Input -->
+            <label for="email" style="display: block; margin-bottom: 5px; font-weight: bold;">Email</label>
+            <input type="email" id="email" required placeholder="Enter your email">
+            
+            <!-- Password Input -->
+            <label for="password" style="display: block; margin-bottom: 5px; font-weight: bold;">Password</label>
+            <input type="password" id="password" required placeholder="Enter your password">
+            
+            <!-- Error Message Display -->
+            <p id="errorMessage" class="hidden"></p>
+            
+            <!-- Submit Button -->
+            <button type="submit" id="submitBtn">Log In</button>
+        </form>
+
+        <!-- Success Message Area -->
+        <div id="successMessage" class="hidden"></div>
+    </div>
+
+    <script>
+        // Step C: script.js content embedded
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const submitBtn = document.getElementById('submitBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const loginContainer = document.querySelector('.login-container');
+            
+            // Configuration (Step 5)
+            // !!! IMPORTANT: This URL must be updated by the developer for actual use !!!
+            const API_URL = 'https://api.yourdomain.com/v1/auth/login'; 
+
+            let isLoading = false;
+
+            // Helper to manage UI state based on loading status (Step 6)
+            function setLoadingState(loading) {
+                isLoading = loading;
+                submitBtn.disabled = loading;
+                if (loading) {
+                    submitBtn.textContent = 'Processing...';
+                    errorMessage.classList.add('hidden'); // Clear errors when starting new attempt
+                } else {
+                    submitBtn.textContent = 'Log In';
+                }
+            }
+
+            loginForm.addEventListener('submit', async (event) => {
+                event.preventDefault(); // Prevent default browser form submission
+
+                if (isLoading) return;
+
+                // Step 7: Ensure native validation passes before proceeding (though fetch handles backend validation)
+                if (!loginForm.checkValidity()) {
+                    // Browser handles displaying required field errors, but we ensure we don't proceed to fetch
+                    setLoadingState(false); 
+                    return;
+                }
+
+                setLoadingState(true);
+
+                const payload = {
+                    email: emailInput.value.trim(),
+                    password: passwordInput.value.trim()
+                };
+
+                try {
+                    // Step 5: API Call Simulation
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    // Check if response is OK (200-299)
+                    if (response.ok) {
+                        // Successful response handling (Step 8: Success)
+                        const data = await response.json();
+                        
+                        // Ensure success structure matches expectation (Step 5)
+                        if (data.success === true && data.userId) {
+                            console.log("Login successful. Token received:", data.token);
+                            
+                            // Hide form and show success message
+                            loginContainer.classList.add('hidden');
+                            successMessage.textContent = `Login Successful! Welcome back, User ID: ${data.userId}. (In a real app, redirecting now...)`;
+                            successMessage.classList.remove('hidden');
+                            
+                            // Optional: window.location.href = '/dashboard';
+
+                        } else {
+                            // Handle case where response is 200 but payload indicates failure (unlikely based on plan, but safe)
+                            const errorText = data.message || 'Login succeeded but returned unexpected data.';
+                            errorMessage.textContent = errorText;
+                            errorMessage.classList.remove('hidden');
+                        }
+
+                    } else {
+                        // Step 7: Error Handling (Non-2xx HTTP status code)
+                        let errorText = 'Authentication failed. Please check your credentials.';
+                        
+                        try {
+                            const errorData = await response.json();
+                            errorText = errorData.message || errorText;
+                        } catch (e) {
+                            // If response body isn't JSON (e.g., 500 server error text)
+                            errorText = `Server responded with status ${response.status}.`;
+                        }
+                        
+                        errorMessage.textContent = errorText;
+                        errorMessage.classList.remove('hidden');
+                    }
+
+                } catch (error) {
+                    // Step 7: Network/Fetch Error Handling (e.g., CORS issue, DNS failure)
+                    console.error("Fetch error:", error);
+                    errorMessage.textContent = 'A network error occurred. Please check connectivity or API status.';
+                    errorMessage.classList.remove('hidden');
+                } finally {
+                    // Step 6: Clear loading state regardless of outcome
+                    setLoadingState(false);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
